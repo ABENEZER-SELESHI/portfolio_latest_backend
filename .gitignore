@@ -4,5 +4,9 @@ dist/
 uploads/*
 !uploads/.gitkeep
 coverage/
+prisma/seed.js
+prisma/seed.js.map
+prisma/seed.d.ts
+prisma/seed.d.ts.map
 *.log
 .DS_Store
