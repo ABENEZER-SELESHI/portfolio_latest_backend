@@ -32,10 +32,15 @@ export class PublicController {
   };
 
   projects = async (req: Request, res: Response) => {
+    const query = (req.validated?.query ?? req.query) as {
+      category?: string;
+      technology?: string;
+      featured?: boolean;
+    };
     const data = await projectService.list({
-      category: req.query.category as string | undefined,
-      technology: req.query.technology as string | undefined,
-      featured: req.query.featured as boolean | undefined,
+      category: query.category,
+      technology: query.technology,
+      featured: query.featured,
     });
     sendSuccess(res, data);
   };
@@ -53,8 +58,16 @@ export class PublicController {
 
   resume = async (_req: Request, res: Response) => {
     const settings = await siteRepository.getSettings();
-    if (!settings?.resumeUrl) throw new NotFoundError("Resume not available");
+    if (!settings?.resumeUrl) {
+      sendSuccess(res, {
+        available: false,
+        filename: null,
+        downloadUrl: null,
+      });
+      return;
+    }
     sendSuccess(res, {
+      available: true,
       filename: settings.resumeFilename,
       downloadUrl: `${env.API_URL}/api/v1/resume/download`,
     });

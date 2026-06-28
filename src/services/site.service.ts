@@ -43,7 +43,7 @@ export class SiteService {
     const [projects, certificates, skills, unread, projectLast, site] = await Promise.all([
       projectRepository.count(),
       certificateRepository.count(),
-      prisma.skill.count({ where: { deletedAt: null } }),
+      prisma.techStackItem.count({ where: { deletedAt: null } }),
       contactRepository.countUnread(),
       projectRepository.lastUpdated(),
       siteRepository.getSettings(),

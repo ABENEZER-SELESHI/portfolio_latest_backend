@@ -3,6 +3,27 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+/** Normalize Brevo-style SMTP_* names to internal env keys */
+function normalizeSmtpEnv(source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const encryption = source.SMTP_ENCRYPTION?.toUpperCase();
+  const secureFromEncryption =
+    encryption === "SSL" || encryption === "TLS"
+      ? "true"
+      : encryption === "STARTTLS" || encryption === "NONE"
+        ? "false"
+        : source.SMTP_SECURE;
+
+  return {
+    ...source,
+    SMTP_HOST: source.SMTP_HOST ?? source.SMTP_SERVER,
+    SMTP_USER: source.SMTP_USER ?? source.SMTP_USERNAME,
+    SMTP_PASS: source.SMTP_PASS ?? source.SMTP_PASSWORD,
+    SMTP_PORT: source.SMTP_PORT,
+    SMTP_SECURE: secureFromEncryption ?? source.SMTP_SECURE,
+    SMTP_FROM: source.SMTP_FROM ?? source.CONTACT_RECIPIENT,
+  };
+}
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "staging", "production", "test"])
@@ -31,13 +52,18 @@ const envSchema = z.object({
     .transform((v) => v === "true"),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().email().optional(),
+  /** Brevo REST API key (xkeysib-…), not the SMTP key (xsmtpsib-…) */
+  BREVO_API_KEY: z.string().optional(),
+  /** brevo-api (default) or smtp */
+  EMAIL_TRANSPORT: z.enum(["brevo-api", "smtp"]).default("brevo-api"),
   CONTACT_RECIPIENT: z.string().email().default("ebenezerseleshi@gmail.com"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX: z.coerce.number().default(100),
   CONTACT_RATE_LIMIT_MAX: z.coerce.number().default(5),
 });
 
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse(normalizeSmtpEnv(process.env));
 
 if (!parsed.success) {
   console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
@@ -45,3 +71,12 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+export const isSmtpConfigured = (): boolean =>
+  Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
+
+export const isBrevoApiConfigured = (): boolean => Boolean(env.BREVO_API_KEY);
+
+/** True when at least one delivery method (API or SMTP) is configured */
+export const isContactEmailConfigured = (): boolean =>
+  isBrevoApiConfigured() || isSmtpConfigured();

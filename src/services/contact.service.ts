@@ -2,6 +2,7 @@ import { contactRepository } from "../repositories/contact.repository";
 import { emailService } from "./email.service";
 import { sanitizePlainText } from "../utils/sanitize";
 import { AppError, NotFoundError } from "../utils/errors";
+import { logger } from "../utils/logger";
 
 export class ContactService {
   async submit(data: {
@@ -27,7 +28,10 @@ export class ContactService {
 
     try {
       await emailService.sendContactEmail({ ...payload, submittedAt });
-    } catch {
+    } catch (err) {
+      logger.error("Contact email delivery failed", {
+        error: err instanceof Error ? err.message : err,
+      });
       throw new AppError("Failed to send message. Please try again later.", 500);
     }
 

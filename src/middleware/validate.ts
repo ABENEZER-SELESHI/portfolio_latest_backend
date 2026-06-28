@@ -11,6 +11,12 @@ export const validate =
       sendError(res, "Validation failed", errors, 400);
       return;
     }
-    req[source] = result.data;
+
+    // Express 5: req.query and req.params are read-only
+    if (source === "body") {
+      req.body = result.data;
+    } else {
+      req.validated = { ...req.validated, [source]: result.data };
+    }
     next();
   };
