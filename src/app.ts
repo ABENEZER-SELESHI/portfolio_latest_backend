@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import path from "path";
+import { createCorsOptions } from "./config/cors";
 import { env } from "./config/env";
 import { apiRouter } from "./routes";
 import { errorHandler } from "./middleware/errorHandler";
@@ -19,12 +20,7 @@ export const createApp = () => {
     })
   );
 
-  app.use(
-    cors({
-      origin: env.FRONTEND_URL,
-      credentials: true,
-    })
-  );
+  app.use(cors(createCorsOptions()));
 
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true }));

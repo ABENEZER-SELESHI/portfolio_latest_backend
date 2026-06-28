@@ -31,6 +31,8 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(5000),
   API_URL: z.string().url().default("http://localhost:5000"),
   FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  /** Comma-separated browser origins allowed to call the API (defaults to FRONTEND_URL) */
+  CORS_ALLOWED_ORIGINS: z.string().optional(),
   DATABASE_URL: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
@@ -71,6 +73,22 @@ if (!parsed.success) {
 }
 
 export const env = parsed.data;
+
+const parseOriginList = (value: string | undefined): string[] =>
+  value
+    ? value
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : [];
+
+export const corsAllowedOrigins = [
+  ...new Set(
+    parseOriginList(env.CORS_ALLOWED_ORIGINS).length > 0
+      ? parseOriginList(env.CORS_ALLOWED_ORIGINS)
+      : [env.FRONTEND_URL]
+  ),
+];
 
 export const isSmtpConfigured = (): boolean =>
   Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS);
