@@ -15,13 +15,17 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: { passwordHash },
     create: {
       email: adminEmail,
       passwordHash,
       role: "ADMIN",
     },
   });
+
+  if (adminEmail !== "admin@portfolio.local") {
+    await prisma.user.deleteMany({ where: { email: "admin@portfolio.local" } });
+  }
 
   const existingSite = await prisma.siteSettings.findFirst();
   if (!existingSite) {
